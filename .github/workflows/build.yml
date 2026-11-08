@@ -1,0 +1,30 @@
+name: Build VST3 + CLAP
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev libfontconfig1-dev libgl1-mesa-dev libx11-dev \
+            libxrandr-dev libxinerama-dev libxcursor-dev libxext-dev libxcomposite-dev libfreetype-dev
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build VST3 + CLAP
+        run: cmake --build build --config Release --target PitchHack_VST3 PitchHack_CLAP --parallel 2
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: PitchHack-${{ runner.os }}
+          path: |
+            build/PitchHack_artefacts/Release/VST3/*.vst3
+            build/PitchHack_artefacts/Release/CLAP/*.clap
